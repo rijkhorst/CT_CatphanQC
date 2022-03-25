@@ -1,24 +1,24 @@
 {
     "actions": {
         "acqdatetime": {
-            "filters": {}, 
+            "filters": {},
             "params": {}
-        }, 
+        },
         "Catphan_Analysis": {
-            "filters": {}, 
+            "filters": {},
             "params": {
                 "classifier": "False",
-                "version": "503",
+                "version": "600",
                 "hu_tolerance": "100",
-                "add_boundary":"True"
+                "add_boundary":"False"
             }
         }
-    }, 
-    "cfgformat": "20180910", 
+    },
+    "cfgformat": "20180910",
     "comments": {
-        "author": "Dennis Dickerscheid, ASZ", 
-        "creator": " ", 
-        "description": "Wrapperfile for the pylinac CatphanQC code", 
+        "author": "Dennis Dickerscheid, ASZ",
+        "creator": " ",
+        "description": "Wrapperfile for the pylinac CatphanQC code",
         "version": "20160413"
     }
 }
