@@ -120,13 +120,13 @@ def _addBoundary(pathtodicom,enlargepixels=25):
 
 def Catphan_Analysis(data, results,actions):
     dcmInfile = os.path.dirname(os.path.abspath(data.series_filelist[0][0]))
-    
+
     try:
         params = action['params']
     except:
         params = {}
 
-        
+
     version = params['version']
     if params['classifier'] == 'true':
        classifier = True
@@ -152,28 +152,49 @@ def Catphan_Analysis(data, results,actions):
         elif version == "604":
            tmpcat = pylinac.CatPhan604(dcmInfile)
 
+    tmpcat.analyze(hu_tolerance=hut) # TODO: add cnr threshold? Check pylinac ct.py code
 
-    tmpcat.analyze(hu_tolerance=hut)
-    #print (tmpcat.return_results())
-    'HU Linearity ROI'
     tmphu =  tmpcat.ctp404.rois
     for key in tmphu.keys():
         results.addFloat('HU_'+key,float(tmphu[key].pixel_value))
-
-    
     results.addBool('HU Passed',bool(tmpcat.ctp404.passed_hu))
-    results.addFloat('Uniformity index', float(tmpcat.ctp486.uniformity_index))
-    results.addFloat('Integral non-uniformity',float(tmpcat.ctp486.integral_non_uniformity))
-    results.addBool('Uniformity Passed',bool(tmpcat.ctp486.overall_passed))
+
     results.addFloat('Low contrast visibility',tmpcat.ctp404.lcv)
-    results.addFloat('MTF 50 (lp/mm)', tmpcat.ctp528.mtf.relative_resolution(50))
+
+    lines = tmpcat.ctp404.lines
+    for key in lines.keys():
+        results.addFloat('Geometric Line Length %s'%key, lines[key].length_mm)
+
     results.addFloat('Geometric Line Average (mm)',tmpcat.ctp404.avg_line_length)
     results.addBool('Geometry Passed', bool(tmpcat.ctp404.passed_geometry))
+
     results.addFloat('Slice Thickness (mm)', tmpcat.ctp404.meas_slice_thickness)
     results.addBool('Slice Thickness Passed',bool(tmpcat.ctp404.passed_thickness))
 
+    rois = tmpcat.ctp486.rois
+    for key in rois.keys():
+        if key != 'Center':
+            delta = rois['Center'].pixel_value - rois[key].pixel_value
+            results.addFloat('Delta Uniformity Center - %s'%key, delta)
+
+    results.addFloat('Uniformity index', float(tmpcat.ctp486.uniformity_index))
+    results.addFloat('Integral non-uniformity',float(tmpcat.ctp486.integral_non_uniformity))
+    results.addBool('Uniformity Passed',bool(tmpcat.ctp486.overall_passed))
+
+    results.addFloat('MTF 10 (lp/mm)', tmpcat.ctp528.mtf.relative_resolution(10))
+    results.addFloat('MTF 50 (lp/mm)', tmpcat.ctp528.mtf.relative_resolution(50))
+    results.addFloat('MTF 80 (lp/mm)', tmpcat.ctp528.mtf.relative_resolution(80))
+
+    if version == "600" or version == "604":
+        rois = tmpcat.ctp515.rois
+        for key in rois.keys():
+            roi = rois[key]
+            results.addFloat('CNR in target %s mm'%key, roi.contrast_to_noise)
+        results.addFloat('Nr of low contrast ROIs visible', float(tmpcat.ctp515.rois_visible))
 
     objects = ['linearity','rmtf','hu','un','sp','prof']
+    if version == "600" or version == "604":
+        objects.append('lc')
 
     for obj in objects:
         tmpcat.save_analyzed_subimage('%s.jpg'%obj,subimage=obj)
